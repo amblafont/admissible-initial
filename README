@@ -1,0 +1,8 @@
+This is an ongoing formalisation on some ongoing work
+about Initial Semantics for admissible operations.
+
+It is based on the UniMath library.
+
+Some proofs were semi-generated from the diagram editor 
+https://amblafont.github.io/graph-editor/index.html, based
+on the commutative diagrams saved in the json files.
