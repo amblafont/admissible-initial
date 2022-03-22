@@ -976,7 +976,7 @@ SSX    --->   SX
       apply universal_Smap_is_Σ_algebra_mor.
       apply ℸa_nat2.
       apply pathsinv0, id_left.
-      Admitted.
+      Qed.
 
 
 
