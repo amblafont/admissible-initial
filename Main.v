@@ -444,10 +444,11 @@ Voire, en supprimant le  + X dans le codomaine,
 *)
 
 
-  (* Lemma Γ_compr {a a' a'' b} (f : a --> a')(g : a' --> a'') : *)
-  (*    (* { ℸ_{ f · g } | b |   = ℸ_{ g } Γ_{ f } b }. *) *)
-  (*    < ℸ_{ f · g } | b | >  = < ℸ_{ g } ℸ_{ f } b  >. *)
-  (*   Admitted. *)
+  Lemma ℸ_compr {a a' a'' b} (f : C ⟦ a, a'⟧)(g : C ⟦ a', a''⟧) :
+     (* { ℸ_{ f · g } | b |   = ℸ_{ g } Γ_{ f } b }. *)
+     < ℸ_{ f · g } | b | >  = < ℸ_{ g } | b| · ℸ_{ f } |b|  >.
+  apply (binprod_functor_compr ℸ).
+  Qed.
 
   (* Notation τ := (Alg_map T). *)
 
@@ -462,11 +463,63 @@ Voire, en supprimant le  + X dans le codomaine,
 (* ℸa {X}{Y} x a z = ℸf id (SX-rec a (copair id (SX-rec a x))) *)
 (*     (b (Ff (ℸf (μ {X}) id ) z)) *)
 
+  Definition ℸa_gen {X Y}(x : X --> Y)(sX : Σ X --> X)
+             (a : Σ Y --> Y)(τ : T Y --> Y)(t : T X --> X) : |Σ ℸ_{ X} Y| --> |ℸ_{ X} Y|.
+  refine < Σ ℸ_{ [{_}; {_} ]^M} | {_} | · {d _ _} ·  ℸ_{ | {_} |} S T (O_{x} |Y| · {Oe _}) ·
+
+                                           ℸ_{ | {_} |} [{_}; {_} ]^M   >.
+  exact sX.
+  exact t.
+  exact a.
+  exact τ.
+  Defined.
+
+  Definition ℸa' {X Y}(x : X --> Y)(a : Σ Y --> Y)(τ : T Y --> Y)(t : T X --> X) : |Σ ℸ_{ S X} Y| --> |ℸ_{ S X} Y|.
+  apply ℸa_gen.
+  exact < [ x ; a]^S>.
+  apply ΣSa.
+  exact a.
+  exact τ.
+  exact <[t]^T>.
+  Defined.
+
   Definition ℸa {X Y}(x : X --> Y)(a : Σ Y --> Y)(τ : T Y --> Y)(t : T X --> X) : |Σ ℸ_{ S X} Y| --> |ℸ_{ S X} Y|.
   refine < Σ ℸ_{ (S [t]^T · μ^S X)} |Y| · {d _ _} · {_}  >.
   refine < ℸ_{ |S X|} (M (O_{S x · [ a ]^S} | Y | · {Oe Y} ) · {_})>.
   refine < [ a ; τ ]^M>.
   Defined.
+  Ltac bifunct_cancel F :=
+    repeat (etrans; [ | apply (binprod_functor_comp F)]);
+    repeat (etrans; [ apply pathsinv0, (binprod_functor_comp F) | ]);
+    (* rewrite <- ?(binprod_functor_comp F); *)
+    rewrite ?id_right, ?id_left;
+    apply (binprod_functor_cancel F); try apply idpath.
+
+  Lemma ℸaa' {X Y}(x : X --> Y)(sY : Σ Y --> Y)(tY : T Y --> Y)(tX : T X --> X) :
+    ℸa x sY tY tX = ℸa' x sY tY tX.
+    Proof.
+      unfold ℸa.
+      unfold ℸa', ℸa_gen.
+      rewrite <- !assoc.
+      eenough ( h : { Σ ℸ_{ S [tX ]^T · μ^S X} | Y |  = {_}}).
+      rewrite h.
+      apply cancel_precomposition.
+      apply cancel_precomposition.
+      - bifunct_cancel ℸ.
+        apply cancel_postcomposition.
+        cbn -[S liftΣS O universal_Smap].
+        apply maponpaths.
+        apply maponpaths.
+        apply cancel_postcomposition.
+        bifunct_cancel O.
+        apply pathsinv0.
+        apply universal_Smap_eq.
+      - unfold mk_M_alg.
+        rewrite μ_is_universal.
+        reflexivity.
+Qed.
+
+
 
     Lemma ℸa_nat {X Y Y'} (u : Y --> Y')
                (t : T Y --> Y)(y : Y --> X)
@@ -592,59 +645,48 @@ Voire, en supprimant le  + X dans le codomaine,
     Lemma lift_Talg_double {X}(t : T X --> X) : { [ [ t ]^T ]^T · μ^S X = T μ^S X · [t]^T }.
       Admitted.
 
-  Ltac bifunct_cancel F :=
-    repeat (etrans; [ | apply (binprod_functor_comp F)]);
-    repeat (etrans; [ apply pathsinv0, (binprod_functor_comp F) | ]);
-    (* rewrite <- ?(binprod_functor_comp F); *)
-    rewrite ?id_right, ?id_left;
-    apply (binprod_functor_cancel F); try apply idpath.
 
-  (* tentative de generalisation *)
-  Lemma  ℸμ_is_Σ_alg_mor_gen {X Y : C}(tX : T X --> X)(tY : T Y --> Y)(u : X --> S Y): 
-     is_Σ_algebra_mor (ℸa u (ΣSa Y) < [tY ]^T > tX)
-   (ℸa < [u; {ΣSa Y} ]^S > (ΣSa Y) < [tY ]^T > < [tX ]^T > : C ⟦ | Σ ℸ_{ {S ∙ S} X} S Y |, | ℸ_{ {S ∙ S} X} S Y | ⟧)
-   < ℸ_{ μ^S X} | S Y | >.
+  Lemma η_liftΣS {X : C}(f : Σ X --> X) : { η^S X · [ f ]^S = | X | }.
+    apply η_universal_Smap.
+    Qed.
+  Lemma liftΣS_assoc {X : C} (s : Σ X -->  X) :
+  {S [s ]^S · [s ]^S = μ^S X · [s ]^S}.
+    Admitted.
+Lemma liftΣS_is_Σ_algebra_mor {X}(s : Σ X --> X) : is_Σ_algebra_mor (ΣSa X) s < [s ]^S >.
+apply is_Σ_S_algebra_mor.
+hnf.
+etrans; [apply liftΣS_assoc|].
+apply cancel_postcomposition.
+apply μ_is_universal.
+Qed.
+  (*
+  is_Σ_algebra_mor < Σ ℸ_{ [s; t ]^M} | X | · {d X X} · ℸ_{ | X |} S T {Oe X} · ℸ_{ | X |} [s; t ]^M > 
+    ?g < ℸ_{ [s ]^S} | X | >
+*)
+  (* autre tentative de generalisation *)
+  Lemma  ℸμ_is_Σ_alg_mor_gen' {X Y : C}(tX : T X --> X)(sX : Σ X --> X)
+         (compat : is_algebra_mor T <[tX]^T> tX <[sX]^S>)
+         (sX_mul : {S [sX ]^S · [sX ]^S = μ^S X · [sX ]^S })
+         (tY : T Y --> Y)(sY : Σ Y --> Y)(u : X --> Y)
+    (hu :   is_Σ_algebra_mor sX sY u) :
+    is_Σ_algebra_mor
+      (* (ℸa u sY <  tY  > tX) *)
+   (* (ℸa < [u; sY ]^S > sY < tY  > < [tX ]^T > : C ⟦ | Σ ℸ_{ {S ∙ S} X} S Y |, | ℸ_{ {S ∙ S} X} S Y | ⟧) *)
+     (ℸa_gen u sX sY tY tX)                 
+     (ℸa' u sY tY tX)
+     (* (ℸa_gen <[ u ; sY]^S> _ _ _ _) *)
+   < ℸ_{ [ sX ]^S} | Y | >.
+  (* TODO: reprendre la preuve d'apres *)
   Proof.
     hnf.
     cbn -[S O universal_Smap].
-    unfold ℸa.
-    rewrite <- μ_is_universal.
+    unfold ℸa', ℸa_gen.
     rewrite !assoc.
-    rewrite !(binprod_functor_compl ℸ).
-    rewrite !assoc.
+    (* rewrite !(binprod_functor_compl ℸ). *)
+    (* rewrite !assoc. *)
     cbn -[S O universal_Smap].
     apply pathsinv0.
   (* rewrite (Monad_law2 (T := S) X). *)
-etrans.
-{
-  do 2 apply cancel_postcomposition.
-  repeat rewrite assoc'.
-  do 2 apply cancel_precomposition.
-  repeat rewrite assoc.
-  apply (binprod_functor_cancel ℸ);[|apply idpath].
-  etrans.
-  {
-  etrans;[ apply (functor_comp M)|].
-  cbn -[S M O].
-  apply cancel_postcomposition.
-  apply (maponpaths).
-  apply (binprod_functor_cancel O).
-  apply idpath.
-  rewrite μ_is_universal.
-  apply pathsinv0.
-  apply universal_Smap_eq.
-
-  (*
-  etrans;[|apply (functor_id M)].
-  apply maponpaths.
-  etrans;[|apply (binprod_functor_id O)].
-  apply (binprod_functor_cancel O).
-  apply idpath.
-  apply Monad_law2.
-*)
-  }
-  apply idpath.
-}
 etrans.
 {
   repeat rewrite assoc'.
@@ -678,59 +720,86 @@ etrans.
   (* norm_graph. *)
   (* admit. *)
 }
-rewrite !assoc.
-assert (eq1 :
-         { ℸ_{ |S S X|} M O_{ μ^S X} |S Y| · ℸ_{ | S S X |} (M O_{ [u; {ΣSa Y} ]^S} |S Y| · M {Oe | S Y |}) · ℸ_{ | S S X |} [{ΣSa Y}; [tY ]^T ]^M = ℸ_{ |S S X| } S T (O_{ S [u; {ΣSa Y} ]^S · μ^S Y} |S Y| · {Oe | S Y |}) · ℸ_{ |S S X| } [{ΣSa Y}; [tY ]^T ]^M }).
+  rewrite !assoc.
+eenough (h : _ = _).
+etrans.
 {
-  rewrite <- !(binprod_functor_compl ℸ).
-  apply (binprod_functor_cancel ℸ);[|apply idpath].
-  cbn -[S M O universal_Smap].
   apply cancel_postcomposition.
-  rewrite <- !(functor_comp M).
-  apply (maponpaths (# M)).
-  rewrite assoc.
   apply cancel_postcomposition.
-  etrans;[apply pathsinv0, (binprod_functor_compr O)|].
-  apply binprod_functor_cancel.
-  apply idpath.
-  cbn -[S universal_Smap].
-  rewrite !μ_is_universal.
-  etrans;[| apply pathsinv0, S_universal_Smap].
-  etrans;[ apply (S_universal_comp)|].
-  rewrite id_left, id_right.
-  apply idpath.
+  apply cancel_postcomposition.
+  apply cancel_postcomposition.
+  apply h.
 }
-assert (eq2 :
-          {Σ ℸ_{ S [tX ]^T · μ^S X} |S Y| · Σ ℸ_{ M μ^S X} | S Y | = Σ ℸ_{ μ^S X} |S Y| · Σ ℸ_{ S [[tX ]^T ]^T · μ^S S X} |S Y|}).
+
+etrans;[|rewrite !assoc'; apply idpath ].
+etrans;[ rewrite 4!assoc'; apply idpath|].
+do 3 apply cancel_precomposition.
+
+
+{
+  (* rewrite <- !(binprod_functor_compl ℸ). *)
+  rewrite !assoc.
+  apply cancel_postcomposition.
+  rewrite !functor_comp.
+  bifunct_cancel ℸ.
+  cbn -[S M O universal_Smap].
+  rewrite !assoc.
+  apply cancel_postcomposition.
+  etrans;[apply pathsinv0, (functor_comp M)|].
+  apply (maponpaths (# M)).
+  bifunct_cancel O.
+  cbn -[S universal_Smap].
+  eapply universal_Smap_unique.
+  - rewrite η_universal_Smap.
+    rewrite assoc.
+    rewrite η_liftΣS.
+    apply id_left.
+  - eapply is_Σ_algebra_mor_comp.
+    + apply is_Σ_algera_lif
+    + eapply liftΣS_is_Σ_algebra_mor.
+    + exact hu.
+  - apply universal_Smap_is_Σ_algebra_mor.
+}
+(* assert (eq2 : *)
+(*           {Σ ℸ_{ S [tX ]^T · μ^S X} |S Y| · Σ ℸ_{ M μ^S X} | S Y | = Σ ℸ_{ μ^S X} |S Y| · Σ ℸ_{ S [[tX ]^T ]^T · μ^S S X} |S Y|}). *)
 {
   rewrite  <- !(functor_comp Σ).
   apply maponpaths.
   bifunct_cancel ℸ.
-  cbn -[S].
-  rewrite assoc.
-  etrans.
-  apply cancel_postcomposition.
-  rewrite <- !(functor_comp S).
-  apply maponpaths.
-  apply pathsinv0, lift_Talg_double.
-  rewrite (functor_comp S).
+  cbn -[S universal_Smap].
+  unfold mk_M_alg.
+  rewrite <- μ_is_universal.
+  rewrite !assoc.
+  etrans. {
+    apply cancel_postcomposition.
+    etrans;[apply pathsinv0,functor_comp|].
+    apply maponpaths.
+    apply compat.
+  }
+  rewrite functor_comp.
   rewrite !assoc'.
   apply cancel_precomposition.
-  apply (Monad_law3 (T := S)).
-}
-etrans.
-{
-  do 4 apply cancel_postcomposition.
-  apply eq2.
-}
-rewrite !assoc'.
-apply cancel_precomposition.
-apply cancel_precomposition.
-apply cancel_precomposition.
-rewrite !assoc.
-apply eq1.
+  apply sX_mul.
+  }
+  Qed.
 
-Qed.
+
+  (* tentative de generalisation *)
+  Lemma  ℸμ_is_Σ_alg_mor_gen {X Y : C}(tX : T X --> X)(tY : T Y --> Y)(u : X --> S Y): 
+     is_Σ_algebra_mor (ℸa u (ΣSa Y) < [tY ]^T > tX)
+   (ℸa < [u; {ΣSa Y} ]^S > (ΣSa Y) < [tY ]^T > < [tX ]^T > : C ⟦ | Σ ℸ_{ {S ∙ S} X} S Y |, | ℸ_{ {S ∙ S} X} S Y | ⟧)
+   < ℸ_{ μ^S X} | S Y | >.
+  Proof.
+    rewrite 2!ℸaa'.
+    rewrite μ_is_universal.
+    apply ℸμ_is_Σ_alg_mor_gen'.
+    - rewrite <- μ_is_universal.
+      apply pathsinv0.
+      apply lift_Talg_double.
+    - rewrite <- μ_is_universal.
+      apply (Monad_law3 (T := S)).
+    - apply universal_Smap_is_Σ_algebra_mor.
+      Qed.
 
 (* ℸa-μ *)
            (* ℸf (μ {S X}) id (ℸa id ind z) ≡ ℸa μ ind (Ff ( ℸf μ id) z) *)
@@ -803,12 +872,6 @@ Qed.
       exact a.
       Defined.
 
-  Lemma η_liftΣS {X : C}(f : Σ X --> X) : { η^S X · [ f ]^S = | X | }.
-    apply η_universal_Smap.
-    Qed.
-  Lemma liftΣS_assoc {X : C} (s : Σ X -->  X) :
-  {S [s ]^S · [s ]^S = μ^S X · [s ]^S}.
-    Admitted.
 
   Lemma universal_Smap_identity {X} :
     { [η^S X; {ΣSa X} ]^S = {identity (S X)} }.
@@ -1019,10 +1082,10 @@ pour le commit 07f9d4d9b55eb4794305f3ebc5 ) *)
         {f · ℸ_{ η^S X} |X| · ℸ_{ [s ]^S} |X| = f }.
 
     intro halg.
-    assert (h : isMonic < ℸ_{S [s]^S} |X|>) by admit.
+    assert (h : isMonic < ℸ_{S [s]^S} |X|>). admit.
     apply h.
     clear h.
-    assert (h : isEpi < [s]^S >) by admit.
+    assert (h : isEpi < [s]^S >). admit.
     apply h.
     clear h.
     rewrite !assoc.
@@ -1140,7 +1203,7 @@ clear eq.
     unfold is_algebra_mor.
     rewrite !assoc.
     rewrite (functor_comp S).
-    assert (h : isMonic < ℸ_{[s]^S} |X|>) by admit.
+    assert (h : isMonic < ℸ_{[s]^S} |X|>). admit.
     apply h.
     clear h.
     etrans; revgoals.
@@ -1282,4 +1345,87 @@ repeat rewrite assoc.
 clear eq.
  apply idpath.
  Admitted.
+
+
+
+  Lemma appendixd' {X} (s : Σ X --> X)(t : T X --> X)
+        (compat : is_algebra_mor T <[t]^T> t <[s]^S>)
+        (g : X --> |ℸ_{X} X|)
+    (f := g · < ℸ_{ [ s ]^S } |X|>):
+    nice_models s t g -> 
+    is_ℸS_algebra_mor (c t f) f < [s]^S >. 
+  unfold nice_models.
+  intro halg.
+  unfold f.
+  hnf.
+  unfold c.
+  rewrite !assoc.
+  cbn -[S universal_Smap].
+  eapply universal_Smap_unique.
+  - cbn -[S universal_Smap].
+    rewrite !assoc.
+    cbn -[S universal_Smap].
+    etrans.
+    {
+      apply cancel_postcomposition.
+      eapply (η_universal_Smap).
+    }
+    etrans; revgoals.
+    {
+      do 3 apply cancel_postcomposition.
+      apply pathsinv0.
+      apply η_liftΣS.
+    }
+    rewrite id_left.
+    rewrite !assoc'.
+    apply cancel_precomposition.
+    rewrite !assoc.
+    etrans; [|  apply (binprod_functor_compr ℸ)].
+    etrans; [apply cancel_postcomposition, pathsinv0, (binprod_functor_comp ℸ)|].
+    etrans; [apply pathsinv0, (binprod_functor_comp ℸ)|].
+    eapply (binprod_functor_cancel ℸ).
+    + rewrite id_left.
+      apply η_liftΣS.
+    + cbn -[S liftΣS].
+      rewrite id_left.
+      apply pathsinv0, liftΣS_assoc.
+  - eapply is_Σ_algebra_mor_comp; [apply universal_Smap_is_Σ_algebra_mor|].
+    unshelve apply ℸa_nat2; revgoals.
+    apply pathsinv0, id_left.
+    assumption.
+    assumption.
+  - eapply is_Σ_algebra_mor_comp.
+    eapply is_Σ_algebra_mor_comp.
+    eapply is_Σ_algebra_mor_comp.
+    + apply liftΣS_is_Σ_algebra_mor.
+    + exact halg.
+    + (* TODO faire un lemme a part *)
+      eassert (h :
+                  is_Σ_algebra_mor _ _ < ℸ_{ [s ]^S} | X | >).
+      { unshelve apply ℸμ_is_Σ_alg_mor_gen'.
+        apply identity.
+        exact s.
+        exact t.
+        exact t.
+        exact compat.
+        apply liftΣS_assoc.
+        hnf.
+        rewrite functor_id,id_left,id_right.
+        apply idpath.
+        }
+        revert h.
+      unfold ℸa_gen.
+      rewrite (binprod_functor_id O).
+      rewrite id_left.
+      intro h.
+      exact h.
+    + rewrite <- ℸaa'.
+      apply ℸa_nat.
+      * apply pathsinv0, id_right.
+      * (* we need that the S and T-algebra structures are compatible.
+         That's expected *)
+        apply pathsinv0, compat.
+      Qed.
+
+
 
