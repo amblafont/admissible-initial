@@ -15,6 +15,7 @@ Require Import UniMath.CategoryTheory.Epis.
 
 Require Import UniMath.CategoryTheory.Core.NaturalTransformations.
 Require Import UniMath.CategoryTheory.limits.initial.
+Require Import UniMath.CategoryTheory.Core.Isos.
 Require Import tactic.
 Local Open Scope cat.
 Local Notation "C ⊠ D" := (category_binproduct C D) (at level 38).
@@ -473,6 +474,7 @@ Voire, en supprimant le  + X dans le codomaine,
   exact a.
   exact τ.
   Defined.
+  Notation θ := ℸa_gen.
 
   Definition ℸa' {X Y}(x : X --> Y)(a : Σ Y --> Y)(τ : T Y --> Y)(t : T X --> X) : |Σ ℸ_{ S X} Y| --> |ℸ_{ S X} Y|.
   apply ℸa_gen.
@@ -1427,5 +1429,532 @@ clear eq.
         apply pathsinv0, compat.
       Qed.
 
+ Section begnin.
+
+   Definition ηΣ x : Σ x --> S x :=
+     < Σ η^S x · {ΣSa x} >.
+
+  Notation "'η^Σ' x " := (ηΣ x)
+                             ( x custom obj, in custom mor at level 1).
+
+  Notation "'O_d^' R x " := (O_dist R x _)
+                             (R ident, x custom obj, in custom mor at level 1 ,
+                             format "'O_d^' R  x").
+  Notation "'o_{' x }" := (Oe x)
+                             (x custom obj, in custom mor at level 1).
+
+  Notation "'O_d^M' x " := (O_dist M x _)
+                             (x custom obj, in custom mor at level 1).
+
+  Notation "'μ^M' x " := (μ M x)
+                             ( x custom obj, in custom mor at level 1).
+
+  Notation "'η^M' x " := (η M x)
+                             ( x custom obj, in custom mor at level 1).
+
+   Definition interp := ∑ (K : ∏ X, X --> | ℸ_{X} S T X |),
+       (* interp-laws.json *)
+       (* naturality *)
+       (∏ X Y (f : X --> Y),{ {K X} · ℸ_{|X|} S T f = f · {K Y} · ℸ_{f} |S T Y| })
+      (* coherence *)
+         × (∏ X,
+             { Σ η^M X · Σ {K |S T X|} · Σ ℸ_{|S T X|} μ^M X · {d |S T X| X} · ℸ_{|X|} S T O_d^M X · ℸ_{|X|} μ^M {_} · ℸ_{|X|} S T o_{X} = η^Σ X · {K (S X)} · ℸ_{η^S X} |S T S X| · ℸ_{|X|}  S {δ X} · ℸ_{|X|} μ^S T X }). 
+
+   Definition interp_to_mor (K : interp) : ∏ X, X --> | ℸ_{X} S T X | := pr1 K.
+   Coercion interp_to_mor : interp >-> Funclass.
+
+   Definition interp_nat (K : interp)
+     : ∏ X Y (f : X --> Y),{ {K X} · ℸ_{|X|} S T f = f · {K Y} · ℸ_{f} |S T Y| } :=
+     pr1 (pr2 K).
+
+   Definition interp_coh (K : interp)
+              : ∏ X,
+             { Σ η^M X · Σ {K |S T X|} · Σ ℸ_{|S T X|} μ^M X · {d |S T X| X} · ℸ_{|X|} S T O_d^M X · ℸ_{|X|} μ^M {_} · ℸ_{|X|} S T o_{X} = η^Σ X · {K (S X)} · ℸ_{η^S X} |S T S X| · ℸ_{|X|}  S {δ X} · ℸ_{|X|} μ^S T X } :=
+     pr2 (pr2 K).
+
+
+   Context (L R : interp).
+   Notation "'L' x" := (interp_to_mor L x) ( x custom obj, in custom mor at level 1).
+   Notation "'R' x" := (interp_to_mor R x) ( x custom obj, in custom mor at level 1).
+
+   Definition is_eq_model {X} (s : Σ X --> X)(t : T X --> X) :=
+     { L X · ℸ_{|X|} [ s ; t]^M =  R X · ℸ_{|X|} [ s ; t]^M }.
+
+   
+   Context (Z : C).
+   (* Notation "'0'" := Z. *)
+   (* Notation "'0'" := Z (in custom obj). *)
+   Context (Zi : isInitial _ Z).
+
+   Notation "'i' X" := (iscontrpr1 (Zi X)) (X custom obj, in custom mor at level 1).
+
+   Context (isoT0 : is_z_isomorphism < i T Z > ).
+
+   Notation "'t₀'" := (is_z_isomorphism_mor isoT0) (in custom mor at level 1).
+
+
+
+Tactic Notation "apply_both" tactic(tac) :=
+      etrans; [|apply pathsinv0; etrans] ; [tac | tac | ].
+(* wtf apply_both idtac not working? *)
+      (* etrans; [|apply pathsinv0; etrans] ; [idtac | idtac | ]. *)
+
+(* Lemma  *)
+(*   is_Σ_algebra_mor (ΣSa Z) (ℸa < i S T S Z > (ΣSa | T S Z |) < [μ^T S Z ]^T > < t₀ >) (K | S Z |) *)
+
+Notation "'σ' X" := (ΣSa X) (X custom obj, in custom mor at level 1).
+
+Lemma η_mk_M_alg 
+      (* should be algebra for T *)
+  {X} (s : Σ X --> X)(t : T X --> X) :
+  { η^T X · t = | X|} ->
+  {  {η M X} · [s; t ]^M = | X |}.
+  Admitted.
+
+Section InterpNiceModels.
+Context (K:interp).
+   Notation "'K' x" := (interp_to_mor K x) ( x custom obj, in custom mor at level 1).
+Lemma E1 {X} (s : Σ X --> X)(t : T X --> X) :
+  { η^T X · t = | X|} ->
+  is_algebra_mor T < [t ]^T> t <[s]^S>
+    ->
+  (* a condition que s et t satisfont le truc la tu sais *)
+  nice_models s t < K X · ℸ_{|X|} [ s; t]^M >.
+Proof.
+  intros ηt ts.
+  hnf.
+  rewrite !assoc.
+  rewrite functor_comp.
+  set (s' := <[s]^S>).
+(*
+generated from interp-laws-cas-alg.json
+ *)
+
+assert(eq : { Σ ℸ_{ |X|} [s;t]^M · Σ ℸ_{[s;t]^M} |X| = Σ ℸ_{[s;t]^M} |S T X| · Σ ℸ_{|S T X|} [s;t]^M }).
+{
+  rewrite <- !functor_comp.
+  apply maponpaths.
+  cbn -[S].
+  rewrite id_left, id_right.
+  bifunct_cancel ℸ.
+}
+etrans.
+{
+  do 3 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { Σ K X = |Σ X| · Σ K X }).
+{
+  apply pathsinv0, id_left.
+}
+etrans.
+{
+  do 5 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+assert(eq : { |Σ X| = Σ η^M X · Σ [ s ; t]^M }).
+{
+  rewrite <- functor_comp.
+  rewrite <- functor_id.
+  apply maponpaths.
+  apply pathsinv0.
+  apply η_mk_M_alg.
+  assumption.
+}
+etrans.
+{
+  do 6 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+assert(eq : { Σ [ s ; t]^M · Σ K X · Σ ℸ_{[s;t]^M} |S T X| = Σ K S T X · Σ ℸ_{|S T X|} S T [s;t]^M }).
+{
+  rewrite <- !functor_comp.
+  apply maponpaths.
+  apply pathsinv0.
+  apply interp_nat.
+}
+etrans.
+{
+  do 4 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { Σ ℸ_{|S T X|} S T [s;t]^M · Σ ℸ_{|S T X|} [s;t]^M = Σ ℸ_{|S T X|} μ^M X · Σ ℸ_{|S T X|} [s;t]^M }).
+{
+  rewrite <- !functor_comp.
+  apply maponpaths.
+  cbn -[S M].
+  bifunct_cancel ℸ.
+  (* OK (law of algebra) *)
+  admit.
+}
+etrans.
+{
+  do 3 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 2 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { Σ ℸ_{|S T X|} [s;t]^M · {d X X} = {d |S T X| X} · ℸ_{|X|} S T O_{|X|} [s ; t]^M }).
+{
+  apply pathsinv0.
+  etrans; [ apply (d_nat _ _ _ _ < [s ;t ]^M > (identity X))|].
+  etrans;[|apply id_right].
+  rewrite functor_id.
+  apply cancel_precomposition.
+  etrans;[| apply (binprod_functor_id ℸ)].
+  rewrite <- functor_id.
+  rewrite <-(binprod_functor_id O) .
+  apply idpath.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 3 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} S T O_{|X|} [s ; t]^M · ℸ_{| X|} S T o_{X} · ℸ_{|X|} [s ; t]^M = ℸ_{|X|} S T O_d^M X · ℸ_{|X|} (μ^M {_} · S T o_{X}) · ℸ_{|X|} [s ; t]^M }).
+{
+  rewrite <- !(binprod_functor_compl ℸ).
+  apply (binprod_functor_cancel ℸ);[| apply idpath].
+  (* TODO *)
+}
+etrans.
+{
+  repeat rewrite assoc'.
+  do 4 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} [s ; t]^M = ℸ_{|X|} S t · ℸ_{|X|} s' }).
+{
+  bifunct_cancel ℸ.
+  cbn.
+  apply pathsinv0, id_right.
+}
+etrans.
+{
+  repeat rewrite assoc'.
+  do 6 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { Σ η^M X · Σ K S T X · Σ ℸ_{|S T X|} μ^M X · {d |S T X| X} · ℸ_{|X|} S T O_d^M X · ℸ_{|X|} (μ^M {_} · S T o_{X}) = η^Σ X · K S X · ℸ_{η^S X} |S T S X| · ℸ_{|X|}  S {δ X} · ℸ_{|X|} μ^S T X }).
+{
+  (* assert (hK := interp_coh K' X). *)
+  rewrite (binprod_functor_compl ℸ).
+  rewrite !assoc.
+  apply interp_coh.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+assert(eq : { ℸ_{|X|} μ^S T X · ℸ_{|X|} S t = ℸ_{|X|} S S t · ℸ_{|X|} μ^S X }).
+{
+  bifunct_cancel ℸ.
+  apply pathsinv0.
+  apply (nat_trans_ax (μ S)).
+}
+etrans.
+{
+  apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 4 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} μ^S X · ℸ_{|X|} s' = ℸ_{|X|} S s' · ℸ_{|X|} s' }).
+{
+  bifunct_cancel ℸ.
+  (* algebra law *)
+  apply pathsinv0.
+  apply liftΣS_assoc.
+}
+etrans.
+{
+  repeat rewrite assoc'.
+  do 5 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} S {δ X} · ℸ_{|X|} S S t = ℸ_{|X|} S [ t]^T  }).
+{
+  bifunct_cancel ℸ;[|cbn;apply id_right].
+  apply pathsinv0.
+  apply functor_comp.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 3 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} S [ t]^T  · ℸ_{|X|} S s' = ℸ_{|X|} S T s' · ℸ_{|X|} S t }).
+{
+  bifunct_cancel ℸ.
+  rewrite <- !functor_comp.
+  apply maponpaths.
+  apply pathsinv0.
+  apply ts.
+}
+etrans.
+{
+  apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 3 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{|X|} S t · ℸ_{|X|} s' = ℸ_{|X|} [s ; t]^M }).
+{
+  bifunct_cancel ℸ.
+  cbn.
+  apply id_left.
+}
+etrans.
+{
+  repeat rewrite assoc'.
+  do 4 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{η^S X} |S T S X| · ℸ_{|X|} S T s' = ℸ_{|S X|} S T s' · ℸ_{η^S X} |S T X| }).
+{
+  bifunct_cancel ℸ.
+  cbn -[S].
+  rewrite id_left, id_right.
+  apply idpath.
+}
+etrans.
+{
+  apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 2 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { K S X · ℸ_{|S X|} S T s' = s' · K X · ℸ_{s'} |S T X| }).
+{
+  apply interp_nat.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { ℸ_{s'} |S T X| · ℸ_{η^S X} |S T X| = |ℸ_{X} S T X| }).
+{
+  rewrite <- ℸ_compr.
+  etrans;[| apply  (binprod_functor_id ℸ)].
+  bifunct_cancel ℸ.
+  apply η_liftΣS.
+}
+etrans.
+{
+  apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  do 3 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { |ℸ_{X} S T X| · ℸ_{|X|} [s ; t]^M = ℸ_{|X|} [s ; t]^M }).
+{
+  apply id_left.
+}
+etrans.
+{
+  repeat rewrite assoc'.
+  do 3 apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { η^Σ X = Σ η^S X · σ X }).
+{
+  apply idpath.
+}
+etrans.
+{
+  do 3 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+assert(eq : { σ X · s' = Σ s' · s }).
+{
+  apply pathsinv0.
+  apply liftΣS_is_Σ_algebra_mor.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  repeat rewrite assoc'.
+  apply cancel_precomposition.
+  repeat rewrite assoc.
+  apply eq.
+}
+repeat rewrite assoc.
+clear eq.
+assert(eq : { Σ η^S X · Σ s' = |Σ X| }).
+{
+  rewrite <- functor_id, <- functor_comp.
+  apply maponpaths.
+  apply η_liftΣS.
+}
+etrans.
+{
+  do 3 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+assert(eq : { |Σ X| · s = s }).
+{
+  apply id_left.
+}
+etrans.
+{
+  do 2 apply cancel_postcomposition.
+  apply eq.
+}
+clear eq.
+ apply idpath.
+Qed.
+End InterpNiceModels.
+
+TODO
+
+(* TODO: motnrer que c'est en fait equivalent a la condition de coherence? *)
+Lemma interp_is_Σ_algebra_mor (K : interp) {X} (s : Σ X --> X)(t : T X --> X) :
+
+  is_Σ_algebra_mor s (ℸa_gen (η M X) s (ΣSa _) < [ μ^T X ]^T > t) (K | X |).
+  Proof.
+    apply  is_Σ_S_algebra_mor.
+    hnf.
+    cbn -[S M universal_Smap].
+    unfold ℸa_gen.
+        assert (h : isEpi < μ^S X>). admit.
+        apply h.
+        clear h.
+    rewrite !assoc.
+    cbn -[S M universal_Smap O].
+    norm_graph.
+
+
+Lemma interp_is_Σ_algebra_mor (K : interp) {X} (t : T X --> X) :
+
+  is_Σ_algebra_mor (ΣSa X) (ℸa < η^S X · η^T S X · η^S T S X > (ΣSa | T S X |) < [μ^T S X ]^T > < t >) (K | S X |).
+  Proof.
+    hnf.
+    cbn -[S].
+    norm_graph.
+
+
+
+Lemma interp_is_Σ_algebra_mor (K : interp) :
+  is_Σ_algebra_mor (ΣSa Z) (ℸa < η^S Z > (ΣSa Z) < [t₀ ]^T > < t₀ >)
+    < {K (S Z)} · ℸ_{ | S Z |} S [t₀ ]^T · ℸ_{ | S Z |} μ^S Z >.
+eapply is_Σ_algebra_mor_comp; revgoals.
+- unshelve apply ℸa_nat2. 
+  +
+    (* exact < i {_}>. *)
+   exact <η^S Z · η^S S Z >.
+    (* the other possibility η^S Z · S η^S Z is actually the same
+     by naturality *)
+  + exact (ΣSa _).
+  + exact < [ [ t₀]^T]^T >.
+  +
+    (* apply proofirrelevancecontr. *)
+    (* apply Zi. *)
+    apply pathsinv0.
+    etrans; [|apply id_right].
+    rewrite assoc'.
+    apply cancel_precomposition.
+    apply (Monad_law1 (T := S)).
+- unshelve eapply is_Σ_algebra_mor_comp.
+  {
+    apply ℸa.
+    exact (η S Z · η T (S Z) · η S (T (S Z))).
+    (* exact < i {_}>. *)
+    exact (ΣSa _).
+    refine <[ {_} ]^T>.
+    exact (μ T _).
+    exact <t₀>.
+  }
+Admitted.
+Lemma initial_is_eq_model : is_eq_model (X := S Z) (ΣSa Z) < [ t₀ ]^T >.
+   hnf.
+   unfold mk_M_alg.
+   (* wtf *)
+(* wtf apply_both not working? *)
+      etrans; [|apply pathsinv0; etrans] ; try (
+   apply cancel_precomposition;
+   apply (binprod_functor_cancel ℸ);[|apply idpath];
+   apply cancel_precomposition;
+   apply pathsinv0;
+   apply μ_is_universal).
+   rewrite !(binprod_functor_compl ℸ), !assoc.
+   change (M ?x) with (S (T x)).
+   cbn -[S universal_Smap lift_Talg].
+   eapply universal_Smap_unique.
+   (* { *)
+   (*     apply ℸa. *)
+   (*     exact (η S Z). *)
+   (*     exact (ΣSa Z). *)
+   (*     exact < [ t₀ ]^T >. *)
+   (*     exact <t₀>. *)
+   (* } *)
+   - rewrite !assoc.
+     cbn -[S universal_Smap lift_Talg].
+     apply proofirrelevancecontr.
+     apply Zi.
+   - apply interp_is_Σ_algebra_mor. 
+   - apply interp_is_Σ_algebra_mor. 
+     Qed.
 
 
